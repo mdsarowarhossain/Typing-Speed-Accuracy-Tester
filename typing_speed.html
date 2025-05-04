@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Speed & Accuracy Tester</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: #00ffe5;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px #00ffe5;
+      border: 1px solid #00ffe5;
+    }
+
+    h1 {
+      color: #00ffe5;
+      text-shadow: 0 0 8px #00ffe5;
+    }
+
+    #quote {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #ffffff;
+      text-shadow: 0 0 5px #00ffe5;
+    }
+
+    textarea {
+      width: 100%;
+      height: 130px;
+      font-size: 16px;
+      padding: 12px;
+      margin-top: 10px;
+      background: #000;
+      color: #00ffe5;
+      border: 1px solid #00ffe5;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #00ffe5 inset;
+      resize: none;
+    }
+
+    .stats {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #ffffff;
+    }
+
+    .stats span {
+      color: #00ffe5;
+      font-weight: bold;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      background: transparent;
+      color: #00ffe5;
+      border: 2px solid #00ffe5;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ffe5;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #00ffe5;
+      color: #000;
+      box-shadow: 0 0 20px #00ffe5, 0 0 40px #00ffe5;
+    }
+
+    .grammar-issues {
+      margin-top: 15px;
+      color: #ff4f4f;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    ul {
+      list-style-type: square;
+      padding-left: 20px;
+      color: #ff5c5c;
+    }
+
+    .suggestion {
+      color: #80ff80;
+    }
+    
+    .parts-of-speech {
+      margin-top: 15px;
+      text-align: left;
+      color: #ffffff;
+    }
+    
+    .pos-tag {
+      display: inline-block;
+      margin-right: 8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      background: #333;
+      color: #00ffe5;
+    }
+    
+    .pos-explanation {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #ccc;
+      text-align: left;
+    }
+    
+    .pos-key {
+      display: inline-block;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Typing Speed & Accuracy Tester</h1>
+    <p id="quote"></p>
+    <textarea id="input" placeholder="Start typing here..."></textarea>
+    <div class="parts-of-speech" id="posContainer"></div>
+    <div class="stats">
+      <p>Time: <span id="timer">0</span> sec</p>
+      <p>Words Typed: <span id="wordcount">0</span></p>
+      <p>Speed: <span id="wpm">0</span> WPM</p>
+      <p>Accuracy: <span id="accuracy">0</span>%</p>
+    </div>
+    <div class="grammar-issues" id="grammar"></div>
+    <div class="pos-explanation">
+      <strong>Parts of Speech Key:</strong><br>
+      <span class="pos-key"><span style="color:#ff9999">Noun</span> (NN)</span>
+      <span class="pos-key"><span style="color:#99ff99">Verb</span> (VB)</span>
+      <span class="pos-key"><span style="color:#9999ff">Adjective</span> (JJ)</span>
+      <span class="pos-key"><span style="color:#ffff99">Adverb</span> (RB)</span>
+      <span class="pos-key"><span style="color:#ff99ff">Pronoun</span> (PRP)</span>
+      <span class="pos-key"><span style="color:#99ffff">Preposition</span> (IN)</span>
+      <span class="pos-key"><span style="color:#ffcc99">Conjunction</span> (CC)</span>
+      <span class="pos-key"><span style="color:#ccccff">Determiner</span> (DT)</span>
+    </div>
+    <button id="restart">Restart</button>
+  </div>
+  <div style="margin-top: 30px;">
+    <a href="/" style="color: #00ffcc;">← Back to Portfolio</a>
+  </div>
+</div>
+  <script>
+    const quoteDisplay = document.getElementById('quote');
+    const inputField = document.getElementById('input');
+    const timerElement = document.getElementById('timer');
+    const wpmElement = document.getElementById('wpm');
+    const accuracyElement = document.getElementById('accuracy');
+    const wordCountElement = document.getElementById('wordcount');
+    const restartButton = document.getElementById('restart');
+    const grammarDiv = document.getElementById('grammar');
+    const posContainer = document.getElementById('posContainer');
+
+    const quotes = [
+      "Practice makes perfect.",
+      "Typing is a valuable skill.",
+      "Code is like humor.",
+      "Stay curious and keep learning.",
+      "Speed and accuracy are important."
+    ];
+
+    let currentQuote = "";
+    let timer = 0;
+    let interval = null;
+    let started = false;
+
+    // Parts of speech tagger (simplified)
+    function tagPartsOfSpeech(text) {
+      if (!text.trim()) return [];
+      
+      const words = text.split(/\s+/);
+      const posTags = [];
+      
+      // Simple rules-based POS tagging (in a real app, you'd use a proper NLP library)
+      words.forEach(word => {
+        // Clean word (remove punctuation)
+        const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
+        
+        // Determine POS (very simplified)
+        let pos = "NN"; // Default to noun
+        
+        if (word.endsWith('ly')) {
+          pos = "RB"; // Adverb
+        } else if (word.endsWith('ing') || word.endsWith('ed')) {
+          pos = "VB"; // Verb
+        } else if (word.endsWith('ful') || word.endsWith('ous') || word.endsWith('able')) {
+          pos = "JJ"; // Adjective
+        } else if (['a', 'an', 'the', 'this', 'that', 'these', 'those'].includes(cleanWord)) {
+          pos = "DT"; // Determiner
+        } else if (['and', 'but', 'or', 'nor', 'for', 'yet', 'so'].includes(cleanWord)) {
+          pos = "CC"; // Conjunction
+        } else if (['in', 'on', 'at', 'by', 'for', 'with', 'about'].includes(cleanWord)) {
+          pos = "IN"; // Preposition
+        } else if (['I', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'].includes(cleanWord)) {
+          pos = "PRP"; // Pronoun
+        } else if (['is', 'am', 'are', 'was', 'were', 'be', 'being', 'been'].includes(cleanWord)) {
+          pos = "VB"; // Verb (to be)
+        } else if (['have', 'has', 'had', 'do', 'does', 'did'].includes(cleanWord)) {
+          pos = "VB"; // Verb
+        }
+        
+        posTags.push({ word, pos });
+      });
+      
+      return posTags;
+    }
+    
+    function updatePosDisplay(text) {
+      const posTags = tagPartsOfSpeech(text);
+      posContainer.innerHTML = "";
+      
+      if (posTags.length === 0) return;
+      
+      posTags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'pos-tag';
+        span.textContent = `${tag.word} (${tag.pos})`;
+        
+        // Add color based on POS
+        switch(tag.pos) {
+          case 'NN': span.style.color = '#ff9999'; break; // Noun
+          case 'VB': span.style.color = '#99ff99'; break; // Verb
+          case 'JJ': span.style.color = '#9999ff'; break; // Adjective
+          case 'RB': span.style.color = '#ffff99'; break; // Adverb
+          case 'PRP': span.style.color = '#ff99ff'; break; // Pronoun
+          case 'IN': span.style.color = '#99ffff'; break; // Preposition
+          case 'CC': span.style.color = '#ffcc99'; break; // Conjunction
+          case 'DT': span.style.color = '#ccccff'; break; // Determiner
+          default: span.style.color = '#ffffff';
+        }
+        
+        posContainer.appendChild(span);
+      });
+    }
+
+    function startTimer() {
+      interval = setInterval(() => {
+        timer++;
+        timerElement.textContent = timer;
+        updateStats();
+      }, 1000);
+    }
+
+    function updateStats() {
+      const text = inputField.value.trim();
+      const wordsTyped = text === "" ? 0 : text.split(/\s+/).length;
+      const minutes = timer / 60;
+      const wpm = Math.round(wordsTyped / minutes || 0);
+      wpmElement.textContent = wpm;
+      wordCountElement.textContent = wordsTyped;
+
+      const correctChars = countCorrectCharacters(inputField.value, currentQuote);
+      const accuracy = Math.round((correctChars / currentQuote.length) * 100);
+      accuracyElement.textContent = accuracy;
+      
+      // Update parts of speech display
+      updatePosDisplay(text);
+    }
+
+    function countCorrectCharacters(input, quote) {
+      let correct = 0;
+      for (let i = 0; i < input.length && i < quote.length; i++) {
+        if (input[i] === quote[i]) correct++;
+      }
+      return correct;
+    }
+
+    function loadNewQuote() {
+      currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      quoteDisplay.textContent = currentQuote;
+      inputField.value = "";
+      timer = 0;
+      started = false;
+      clearInterval(interval);
+      timerElement.textContent = "0";
+      wpmElement.textContent = "0";
+      accuracyElement.textContent = "0";
+      wordCountElement.textContent = "0";
+      grammarDiv.innerHTML = "";
+      posContainer.innerHTML = "";
+    }
+
+    async function checkGrammar(text) {
+      grammarDiv.innerHTML = "🔍 Checking grammar and spelling...";
+      try {
+        const response = await fetch('https://api.languagetoolplus.com/v2/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `text=${encodeURIComponent(text)}&language=en-US`
+        });
+
+        const data = await response.json();
+        displayGrammarIssues(data.matches);
+      } catch (err) {
+        grammarDiv.innerHTML = "❌ Failed to check grammar.";
+        console.error("Grammar check error:", err);
+      }
+    }
+
+    function displayGrammarIssues(issues) {
+      grammarDiv.innerHTML = "";
+      if (issues.length === 0) {
+        grammarDiv.innerHTML = "✅ No grammar or spelling issues detected.";
+      } else {
+        grammarDiv.innerHTML = "<strong>🔴 Issues & Suggestions:</strong><ul>";
+        issues.slice(0, 10).forEach(issue => {
+          const message = issue.message;
+          const suggestion = issue.replacements?.[0]?.value;
+          grammarDiv.innerHTML += `<li>${message}<br><em style="color:#ccc">Problem:</em> "${issue.context.text}"<br><span class="suggestion">${suggestion ? "✅ Suggestion: " + suggestion : "❌ No suggestion available."}</span></li><br>`;
+        });
+        grammarDiv.innerHTML += "</ul>";
+      }
+    }
+
+    inputField.addEventListener('input', () => {
+      if (!started) {
+        startTimer();
+        started = true;
+      }
+
+      updateStats();
+
+      if (inputField.value === currentQuote) {
+        clearInterval(interval);
+        checkGrammar(inputField.value);
+      }
+    });
+
+    restartButton.addEventListener('click', loadNewQuote);
+
+    loadNewQuote();
+  </script>
+</body>
+</html>
